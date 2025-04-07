@@ -19,6 +19,21 @@ class ReedSolomonError(Exception):
 gf_exp = _bytearray([1] * 512)
 gf_log = _bytearray(256)
 field_charac = int(2**8 - 1)
+
+def max_encodable_message_bytes(matrix_bit_capacity, nsym):
+    """
+    Given the matrix's bit capacity and the RS ECC overhead (nsym, in bytes),
+    return the maximum original message length (in bytes) that can be encoded.
+
+    The matrix can hold floor(matrix_bit_capacity / 8) bytes.
+    Since RS encoding produces a block of (message_bytes + nsym) bytes,
+    we must have:
+         message_bytes + nsym <= floor(matrix_bit_capacity / 8)
+    Thus, maximum message_bytes = floor(matrix_bit_capacity / 8) - nsym.
+    """
+    capacity_bytes = matrix_bit_capacity // 8
+    return max(0, capacity_bytes - nsym*2)
+
 def rwh_primes1(n):
     n_half = int(n/2)
     sieve = [True] * n_half

@@ -14,8 +14,9 @@ def draw_hexagon(draw, center, side, fill_color):
     ]
     draw.polygon(vertices, fill=fill_color)
 
+
 class Matrix:
-    SIZE = 25  # Defines a hexagon of radius (SIZE-1) around the center
+    SIZE = 35  # Defines a hexagon of radius (SIZE-1) around the center
 
     def __init__(self, finder_size=3):
         """
@@ -45,7 +46,7 @@ class Matrix:
                     reserved.add((center_q + dq, center_r + dr))
         return reserved
 
-    def getMessageMaxSize(self):
+    def getMessageMaxBits(self):
         # Total cells in a hexagon of radius (SIZE-1)
         radius = self.SIZE - 1
         total = 1 + 3 * radius * (radius + 1)
@@ -88,11 +89,13 @@ class Matrix:
                 byte = bits[i:i+8]
                 if len(byte) == 8:
                     chars.append(chr(int(byte, 2)))
-            return ''.join(chars)
+            final = ''.join(chars)
+            return final.encode('latin-1')
 
     def setBits(self, bits):
         radius = self.SIZE - 1
         reserved_coords = self._reserved_coords()  # compute reserved positions
+
         idx = 0
         # Iterate over all axial coordinates in the overall hexagon
         for q in range(-radius, radius + 1):
@@ -108,6 +111,8 @@ class Matrix:
                         idx += 1
                     else:
                         self.values[(q, r)] = False
+        #print how many bits were set
+        
         return self
 
     def draw_position_hexagon(self, draw, center_q, center_r, side, levels=3):
@@ -126,6 +131,20 @@ class Matrix:
                     color = (0, 0, 0)
                     draw_hexagon(draw, (x, y), side, fill_color=color)
 
+    def draw_timing_strip(self, draw, left_q, left_r, right_q, right_r):
+        # Draw a timing strip between two points in the hexagonal grid.
+        # The strip is a line of alternating colors (black and white).
+        x1 = self.x_offset + 1.5 * left_q * 30
+        y1 = self.y_offset + math.sqrt(3) * left_r * 30 + 15 * left_q
+        x2 = self.x_offset + 1.5 * right_q * 30
+        y2 = self.y_offset + math.sqrt(3) * right_r * 30 + 15 * right_q
+        # Draw the line with alternating colors
+        for i in range(0, int(math.hypot(x2 - x1, y2 - y1)), 10):
+            color = (0, 0, 0) if i % 20 == 0 else (255, 255, 255)
+            x = int(x1 + (x2 - x1) * i / math.hypot(x2 - x1, y2 - y1))
+            y = int(y1 + (y2 - y1) * i / math.hypot(x2 - x1, y2 - y1))
+            draw_hexagon(draw, (x, y), 15, fill_color=color)
+            
 
     def displayMatrix(self, pixel_size=30, output_file='matrix_hexagonal.png'):
         side = pixel_size
@@ -159,6 +178,8 @@ class Matrix:
         self.draw_position_hexagon(draw, radius - self.finder_size, -radius + self.finder_size, side)  # top-right finder
         self.draw_position_hexagon(draw, 0, -radius + self.finder_size, side)    
         
+        self.draw_timing_strip(draw, 0,0, -radius + self.finder_size, 0)  # horizontal timing strip
+        
         img.save(output_file)
         img.show()
 
@@ -166,7 +187,7 @@ class Matrix:
 if __name__ == '__main__':
     # Adjusted test bits: only fill available (non-reserved) data bits.
     matrix = Matrix()
-    max_bits = matrix.getMessageMaxSize()
+    max_bits = matrix.getMessageMaxBits()
     # For testing, alternate ones and zeros.
     test_bits = ''.join(['1' if i % 2 == 0 else '0' for i in range(max_bits)])
     matrix.setBits(test_bits).displayMatrix(pixel_size=20)
