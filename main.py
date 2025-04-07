@@ -9,7 +9,16 @@ def main():
     matrix = Matrix()
     truncatedLength = matrix.getMessageMaxSize()
     bits = bits[:truncatedLength]
+    
+    print("encoded bits:" + message[:truncatedLength//8])
+    
     matrix = matrix.setBits(bits)
+    
+    encodedBits = matrix.values
+    
+    print("decoded bits:")
+    print(matrix.decodeFromBitMatrix(encodedBits))
+    
     
     matrix.displayMatrix()
     print()

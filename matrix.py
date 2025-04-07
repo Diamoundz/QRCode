@@ -17,8 +17,12 @@ def draw_hexagon(draw, center, side, fill_color):
 class Matrix:
     SIZE = 25  # Defines a hexagon of radius (SIZE-1) around the center
 
-    def __init__(self):
-        # Using a dictionary keyed by axial coordinates (q, r)
+    def __init__(self, finder_size=3):
+        """
+        Initialize the matrix with a dynamic finder pattern size.
+        finder_size defines the offset from the hexagon boundary for the finder patterns.
+        """
+        self.finder_size = finder_size
         self.values = {}
 
     def _reserved_coords(self, reserved_levels=3):
@@ -30,9 +34,9 @@ class Matrix:
         reserved = set()
         # Finder pattern centers (adjusted inward by 3 modules)
         finder_centers = [
-            (-radius + 3, 0),            # top-left
-            (radius - 3, -radius + 3),     # top-right
-            (0, -radius + 3)             # top-center
+            (-radius + self.finder_size, 0),            
+            (radius - self.finder_size, -radius + self.finder_size),     
+            (0, -radius + self.finder_size)             
         ]
         for center_q, center_r in finder_centers:
             for dq in range(-reserved_levels, reserved_levels + 1):
@@ -48,6 +52,43 @@ class Matrix:
         # Subtract reserved finder pattern cells
         reserved = len(self._reserved_coords())
         return total - reserved  # available for data
+
+    @classmethod
+    def decodeFromBitMatrix(cls, bit_matrix):
+            """
+            Given a dictionary representing a hexagonal matrix of bits (with keys as axial coordinates (q, r)
+            and values as 0 or 1), reconstitute the Matrix instance and decode the embedded message.
+            
+            The method deduces the hexagon's size from the keys and uses the default finder pattern size.
+            Reserved finder pattern cells (computed from the deduced SIZE and finder_size) are skipped during decoding.
+            """
+            # Deduce the hexagon radius from the keys.
+            radius = max(max(abs(q), abs(r), abs(-q - r)) for q, r in bit_matrix.keys())
+            SIZE = radius + 1
+            # Create a new instance with the default finder_size (3).
+            instance = cls()
+            instance.SIZE = SIZE
+            # Populate instance.values from the provided bit_matrix (convert to booleans).
+            instance.values = {coords: bool(bit_matrix[coords]) for coords in bit_matrix}
+            
+            # Read data cells in the same axial order as setBits, skipping reserved finder cells.
+            bits = ""
+            reserved_coords = instance._reserved_coords()
+            for q in range(-radius, radius + 1):
+                r1 = max(-radius, -q - radius)
+                r2 = min(radius, -q + radius)
+                for r in range(r1, r2 + 1):
+                    if (q, r) in reserved_coords:
+                        continue
+                    bits += '1' if instance.values.get((q, r), False) else '0'
+                    
+            # Convert every 8 bits to a character.
+            chars = []
+            for i in range(0, len(bits), 8):
+                byte = bits[i:i+8]
+                if len(byte) == 8:
+                    chars.append(chr(int(byte, 2)))
+            return ''.join(chars)
 
     def setBits(self, bits):
         radius = self.SIZE - 1
@@ -114,10 +155,10 @@ class Matrix:
 
         # Draw finder patterns so they stand out.
         radius = self.SIZE - 1
-        self.draw_position_hexagon(draw, -radius + 3, 0, side)         # top-left finder
-        self.draw_position_hexagon(draw, radius - 3, -radius + 3, side)  # top-right finder
-        self.draw_position_hexagon(draw, 0, -radius + 3, side)           # top-center finder
-
+        self.draw_position_hexagon(draw, -radius + self.finder_size, 0, side)         # top-left finder
+        self.draw_position_hexagon(draw, radius - self.finder_size, -radius + self.finder_size, side)  # top-right finder
+        self.draw_position_hexagon(draw, 0, -radius + self.finder_size, side)    
+        
         img.save(output_file)
         img.show()
 
