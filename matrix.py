@@ -16,7 +16,8 @@ def draw_hexagon(draw, center, side, fill_color):
 
 
 class Matrix:
-    SIZE = 35  # Defines a hexagon of radius (SIZE-1) around the center
+    SIZE = 25  # Defines a hexagon of radius (SIZE-1) around the center
+    # this size needs to be > NSYM * 8 to have a non-null payload
 
     def __init__(self, finder_size=3):
         """
@@ -29,6 +30,7 @@ class Matrix:
     def _reserved_coords(self, reserved_levels=3):
         """
         Compute reserved coordinates for the finder patterns.
+        TODO : Also add timing
         These coordinates are removed from the data area.
         """
         radius = self.SIZE - 1
